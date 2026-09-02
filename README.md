@@ -12,7 +12,7 @@ topplista och personliga favoriter.
 4. Öppna Authentication → Sign-in method och aktivera Anonymous.
 5. Kopiera webbappens Firebase-konfiguration.
 
-## 2. Testa lokalt
+## 2. Testa lokaltghghg
 
 Kopiera .env.example till .env.local och fyll i Firebase-värdena.
 
