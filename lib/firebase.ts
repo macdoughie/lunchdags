@@ -28,10 +28,20 @@ const firebaseConfig = {
 
 export const firebaseEnabled = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
+function firebaseApp() {
+  return getApps().length ? getApp() : initializeApp(firebaseConfig);
+}
+
 function stateDoc() {
   if (!firebaseEnabled) return null;
-  const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-  return doc(getFirestore(app), "lunchGroups", "main");
+  return doc(getFirestore(firebaseApp()), "lunchGroups", "main");
+}
+
+async function ensureAnonymousUser() {
+  const app = firebaseApp();
+  const auth = getAuth(app);
+  if (!auth.currentUser) await signInAnonymously(auth);
+  return app;
 }
 
 export async function connectLunchState(
@@ -42,11 +52,10 @@ export async function connectLunchState(
   const ref = stateDoc();
   if (!ref) return () => {};
   try {
-    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    await signInAnonymously(getAuth(app));
-    return onSnapshot(ref, async (snap) => {
+    await ensureAnonymousUser();
+    return onSnapshot(ref, (snap) => {
       if (snap.exists()) receive(snap.data() as LunchState);
-      else await setDoc(ref, initial);
+      else setDoc(ref, initial).catch(fail);
     }, fail);
   } catch {
     fail();
@@ -55,8 +64,9 @@ export async function connectLunchState(
 }
 
 export async function saveLunchState(state: LunchState) {
-  const ref = stateDoc();
-  if (!ref) return false;
+  if (!firebaseEnabled) return false;
+  const app = await ensureAnonymousUser();
+  const ref = doc(getFirestore(app), "lunchGroups", "main");
   await setDoc(ref, state);
   return true;
 }
