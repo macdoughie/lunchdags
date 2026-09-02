@@ -1,0 +1,91 @@
+@import "tailwindcss";
+
+:root {
+  --background: #06182d;
+  --foreground: #fff8e7;
+  --card: #0c2540;
+  --card-foreground: #fff8e7;
+  --popover: #102d4a;
+  --popover-foreground: #fff8e7;
+  --primary: #ffc847;
+  --primary-foreground: #13283c;
+  --secondary: #173a58;
+  --secondary-foreground: #fff8e7;
+  --muted: #183752;
+  --muted-foreground: #b8cada;
+  --accent: #18b7a4;
+  --accent-foreground: #041d2c;
+  --destructive: #ff665d;
+  --border: #ffffff24;
+  --input: #ffffff20;
+  --ring: #ffc847;
+  --chart-1: #ffc847;
+  --chart-2: #18b7a4;
+  --chart-3: #ff665d;
+  --chart-4: #f58a35;
+  --chart-5: #7bd389;
+  --radius: 1.1rem;
+  --font-sans: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 5px);
+  --radius-md: calc(var(--radius) - 3px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 6px);
+  --font-sans: var(--font-sans);
+}
+
+* { border-color: var(--border); }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+button, input { font: inherit; }
+
+.lunch-bg {
+  min-height: 100vh;
+  background:
+    linear-gradient(180deg, rgba(3,16,32,.58), rgba(3,16,32,.84)),
+    url("/food-party.png") center top / cover fixed;
+}
+.glass {
+  background: linear-gradient(145deg, rgba(12,37,64,.95), rgba(7,27,48,.92));
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 24px 70px rgba(0,0,0,.30);
+  backdrop-filter: blur(18px);
+}
+.score-gradient {
+  background: linear-gradient(90deg, #ff665d, #ffc847 52%, #18b7a4);
+}
+@media (max-width: 700px) {
+  .lunch-bg { background-position: 42% top; background-attachment: scroll; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+}
