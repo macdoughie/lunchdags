@@ -74,6 +74,18 @@ button, input { font: inherit; }
     linear-gradient(180deg, rgba(3,16,32,.58), rgba(3,16,32,.84)),
     url("/food-party.png") center top / cover fixed;
 }
+
+/* Use the Lunchdags app icon beside the title on the start page. */
+.lunch-bg header > div:first-child > div:first-child {
+  background: url("/favicon.svg") center / cover no-repeat !important;
+  transform: none !important;
+  overflow: hidden;
+  color: transparent !important;
+}
+.lunch-bg header > div:first-child > div:first-child > svg {
+  display: none;
+}
+
 .glass {
   background: linear-gradient(145deg, rgba(12,37,64,.95), rgba(7,27,48,.92));
   border: 1px solid rgba(255,255,255,.15);
