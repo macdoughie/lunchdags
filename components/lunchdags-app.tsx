@@ -222,7 +222,19 @@ export function LunchdagsApp() {
                   <div key={member.id} className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[.055] p-3">
                     <div className="grid size-10 place-items-center rounded-xl text-sm font-black text-[#092238]" style={{ background: member.color }}>{member.name.slice(0,2).toUpperCase()}</div>
                     <span className="flex-1 font-bold">{member.name}</span>
-                    {index === state.chooserIndex && <span className="rounded-full bg-[#ffc847]/15 px-2.5 py-1 text-xs font-black text-[#ffc847]">VÄLJER NU</span>}
+                    {index === state.chooserIndex ? (
+                      <span className="rounded-full bg-[#ffc847]/15 px-2.5 py-1 text-xs font-black text-[#ffc847]">VÄLJER NU</span>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          update({ ...state, chooserIndex: index });
+                          toast.success(`${member.name} väljer nästa lunchställe`);
+                        }}
+                        className="rounded-full border border-[#18b7a4]/40 bg-[#18b7a4]/10 px-2.5 py-1 text-xs font-black text-[#55dcc9] transition hover:bg-[#18b7a4] hover:text-[#062238]"
+                      >
+                        SÄTT PÅ TUR
+                      </button>
+                    )}
                     <button onClick={() => removeMember(member.id)} aria-label={`Ta bort ${member.name}`} className="rounded-lg p-2 text-white/45 hover:bg-white/10 hover:text-[#ff8179]"><Trash2 className="size-4" /></button>
                   </div>
                 ))}
