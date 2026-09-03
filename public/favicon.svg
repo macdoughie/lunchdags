@@ -1,6 +1,19 @@
-<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-<path d="M22 19.2727C22 20.779 20.779 22 19.2727 22H14.7273C13.221 22 12 20.779 12 19.2727V12H19.2727C20.779 12 22 13.221 22 14.7273V19.2727Z" fill="#68C4FF"/>
-<path d="M20 2C21.1046 2 22 2.89543 22 4V7C22 8.10457 21.1046 9 20 9H17C15.8954 9 15 8.10457 15 7V4C15 2.89543 15.8954 2 17 2H20Z" fill="#0C79D8"/>
-<path d="M7 15C8.10457 15 9 15.8954 9 17V20C9 21.1046 8.10457 22 7 22H4C2.89543 22 2 21.1046 2 20V17C2 15.8954 2.89543 15 4 15H7Z" fill="#0C79D8"/>
-<path d="M12 12H4.72727C3.22104 12 2 10.779 2 9.27273V4.72727C2 3.22104 3.22104 2 4.72727 2H9.27273C10.779 2 12 3.22104 12 4.72727V12Z" fill="#2E9EFF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#ffc928"/><stop offset="1" stop-color="#ff8b0b"/></linearGradient>
+    <radialGradient id="plate"><stop stop-color="#fffdf8"/><stop offset="1" stop-color="#eee7dd"/></radialGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-opacity=".22"/></filter>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+  <g filter="url(#shadow)">
+    <circle cx="256" cy="147" r="78" fill="#ffd52d" stroke="#ffe87d" stroke-width="3"/>
+    <g stroke="#ffe36a" stroke-width="13" stroke-linecap="round"><path d="M256 42v24"/><path d="M194 58l13 21"/><path d="M318 58l-13 21"/><path d="M153 103l22 12"/><path d="M359 103l-22 12"/></g>
+    <g fill="#fff9e8"><path d="M55 129c0-14 12-25 26-25 4-20 21-35 42-35 22 0 40 16 43 38 17 0 30 11 30 26H55z"/><path d="M349 133c0-13 11-23 24-23 4-19 20-33 40-33 21 0 38 15 41 36 16 0 29 10 29 24H349z"/></g>
+    <circle cx="256" cy="304" r="151" fill="url(#plate)"/>
+    <circle cx="256" cy="304" r="103" fill="#f8f3eb" stroke="#e6ddd2" stroke-width="9"/>
+    <g fill="#f4f0ea" stroke="#ded7cf" stroke-width="3">
+      <path d="M91 174h13v86c0 12 8 22 18 28v132c0 13-9 23-21 23s-21-10-21-23V288c10-6 18-16 18-28v-86h7v64h8v-64h8v64h8v-64h8v84c0 17-8 27-20 34v128c0 22-14 37-35 37s-35-15-35-37V292c-12-7-20-18-20-34v-84h8v64h8v-64h8v64h8v-64h8v64h8v-64z"/>
+      <path d="M411 173c24 0 34 38 34 84 0 33-7 59-20 72v92c0 13-9 23-21 23s-21-10-21-23v-92c-13-13-20-39-20-72 0-46 18-84 48-84z"/>
+    </g>
+  </g>
 </svg>
