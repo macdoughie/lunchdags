@@ -24,23 +24,10 @@ const initialState: LunchState = {
 };
 
 type Place = { id: string; name: string; address: string; lat?: number; lon?: number; distance?: number };
-type OverpassItem = {
-  id: number;
-  type: string;
-  lat?: number;
-  lon?: number;
-  center?: { lat?: number; lon?: number };
-  tags?: Record<string, string>;
-};
+type SearchOrigin = { lat: number; lon: number };
 
 function average(ratings: Visit["ratings"]) {
   return ratings.length ? ratings.reduce((sum, rating) => sum + rating.score, 0) / ratings.length : 0;
-}
-
-function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const p = Math.PI / 180;
-  const a = .5 - Math.cos((lat2-lat1)*p)/2 + Math.cos(lat1*p)*Math.cos(lat2*p)*(1-Math.cos((lon2-lon1)*p))/2;
-  return 12742 * Math.asin(Math.sqrt(a));
 }
 
 export function LunchdagsApp() {
@@ -49,6 +36,7 @@ export function LunchdagsApp() {
   const [newMember, setNewMember] = useState("");
   const [query, setQuery] = useState("");
   const [searchArea, setSearchArea] = useState("");
+  const [gpsOrigin, setGpsOrigin] = useState<SearchOrigin | null>(null);
   const [places, setPlaces] = useState<Place[]>([]);
   const [searching, setSearching] = useState(false);
   const [selected, setSelected] = useState<Place | null>(null);
@@ -99,56 +87,60 @@ export function LunchdagsApp() {
     update({ ...state, members, chooserIndex: members.length ? state.chooserIndex % members.length : 0 });
   };
 
-  const findRestaurants = async (originLat: number, originLon: number) => {
-    const dataQuery = `[out:json][timeout:18];(node["amenity"~"restaurant|cafe|fast_food"](around:1800,${originLat},${originLon});way["amenity"~"restaurant|cafe|fast_food"](around:1800,${originLat},${originLon}););out center tags;`;
-    const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(dataQuery)}`);
-    if (!response.ok) throw new Error();
-    const data = await response.json() as { elements: OverpassItem[] };
-    const needle = query.trim().toLowerCase();
-    const found: Place[] = data.elements
-      .filter((item) => item.tags?.name)
-      .map((item) => {
-        const lat = item.lat ?? item.center?.lat;
-        const lon = item.lon ?? item.center?.lon;
-        return {
-          id: `osm-${item.type}-${item.id}`,
-          name: item.tags?.name ?? "Restaurang",
-          address: [item.tags?.["addr:street"], item.tags?.["addr:housenumber"]].filter(Boolean).join(" ") || item.tags?.cuisine || "Nära sökområdet",
-          lat, lon, distance: lat && lon ? distanceKm(originLat, originLon, lat, lon) : undefined,
-        };
-      })
-      .filter((place) => !needle || place.name.toLowerCase().includes(needle))
-      .sort((a,b) => (a.distance ?? 99) - (b.distance ?? 99))
-      .slice(0, 12);
-    setPlaces(found);
-    if (!found.length) toast.info("Inga träffar där. Prova ett annat namn eller område.");
+  const runRestaurantSearch = async (origin?: SearchOrigin | null) => {
+    const restaurant = query.trim();
+    const area = searchArea.trim();
+    const activeOrigin = area ? null : (origin ?? gpsOrigin);
+
+    if (!restaurant && !area && !activeOrigin) {
+      toast.info("Skriv ett restaurangnamn eller använd område/GPS.");
+      return;
+    }
+
+    setSearching(true);
+    setPlaces([]);
+    try {
+      const params = new URLSearchParams();
+      if (restaurant) params.set("q", restaurant);
+      if (area) params.set("area", area);
+      if (activeOrigin) {
+        params.set("lat", String(activeOrigin.lat));
+        params.set("lon", String(activeOrigin.lon));
+      }
+
+      const response = await fetch(`/api/restaurants?${params}`);
+      const data = await response.json() as { places?: Place[]; error?: string };
+      if (!response.ok) throw new Error(data.error || "Sökningen misslyckades.");
+
+      const found = data.places ?? [];
+      setPlaces(found);
+      if (!found.length) {
+        toast.info("Inga träffar. Prova ett kortare namn eller ta bort avgränsningen.");
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Restaurangsökningen svarade inte.");
+    } finally {
+      setSearching(false);
+    }
   };
 
   const searchNearby = () => {
-    if (!navigator.geolocation) return toast.error("GPS stöds inte på den här enheten. Sök med område i stället.");
+    if (!navigator.geolocation) {
+      toast.error("GPS stöds inte på den här enheten. Sök med område i stället.");
+      return;
+    }
+
     setSearching(true);
     navigator.geolocation.getCurrentPosition(async ({ coords }) => {
-      try { await findRestaurants(coords.latitude, coords.longitude); }
-      catch { toast.error("Restaurangsökningen svarade inte. Försök igen."); }
-      finally { setSearching(false); }
-    }, () => { setSearching(false); toast.error("GPS nekades. Skriv ett område eller en adress i stället."); }, { enableHighAccuracy: true, timeout: 12000 });
-  };
-
-  const searchByArea = async () => {
-    const area = searchArea.trim();
-    if (!area) return toast.info("Skriv en ort, stadsdel eller adress.");
-    setSearching(true);
-    try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=se&q=${encodeURIComponent(area)}`);
-      if (!response.ok) throw new Error();
-      const matches = await response.json() as { lat: string; lon: string }[];
-      if (!matches.length) {
-        toast.info("Jag hittade inte området. Prova en tydligare adress.");
-        return;
-      }
-      await findRestaurants(Number(matches[0].lat), Number(matches[0].lon));
-    } catch { toast.error("Områdessökningen svarade inte. Försök igen."); }
-    finally { setSearching(false); }
+      const origin = { lat: coords.latitude, lon: coords.longitude };
+      setGpsOrigin(origin);
+      setSearchArea("");
+      toast.success("GPS används för att begränsa sökningen.");
+      await runRestaurantSearch(origin);
+    }, () => {
+      setSearching(false);
+      toast.error("GPS nekades. Du kan fortfarande söka med restaurangnamn eller område.");
+    }, { enableHighAccuracy: true, timeout: 12000 });
   };
 
   const choosePlace = (place: Place) => {
@@ -265,17 +257,45 @@ export function LunchdagsApp() {
           <TabsContent value="find">
             <section className="glass rounded-[1.8rem] p-5 sm:p-7">
               <div className="max-w-2xl">
-                <p className="mb-1 text-sm font-black uppercase tracking-[.16em] text-[#18b7a4]">Nära dig</p>
+                <p className="mb-1 text-sm font-black uppercase tracking-[.16em] text-[#18b7a4]">Restaurangsökning</p>
                 <h2 className="text-2xl font-black">Hitta dagens lunch</h2>
-                <p className="mt-1 text-[#b8cada]">{chooser ? `${chooser.name} väljer. Använd GPS eller skriv var ni vill äta.` : "Lägg först till lunchgänget."}</p>
+                <p className="mt-1 text-[#b8cada]">{chooser ? `${chooser.name} väljer. Sök på restaurangen; område eller GPS är frivillig avgränsning.` : "Lägg först till lunchgänget."}</p>
               </div>
               <div className="mt-5 grid gap-3 rounded-2xl border border-white/10 bg-white/[.035] p-3">
-                <div className="relative"><Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-white/45" /><Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Restaurangnamn (valfritt)" className="h-13 border-white/15 bg-white/10 pl-12 text-base placeholder:text-white/45" /></div>
-                <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
-                  <div className="relative"><MapPin className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-white/45" /><Input value={searchArea} onChange={(event) => setSearchArea(event.target.value)} onKeyDown={(event) => event.key === "Enter" && searchByArea()} placeholder="Ort, stadsdel eller adress" className="h-13 border-white/15 bg-white/10 pl-12 text-base placeholder:text-white/45" /></div>
-                  <Button onClick={searchByArea} disabled={searching || !chooser} className="h-13 bg-[#18b7a4] px-5 font-black text-[#062238] hover:bg-[#3ed0bc]"><Search />{searching ? "Söker…" : "Sök område"}</Button>
-                  <Button onClick={searchNearby} disabled={searching || !chooser} variant="outline" className="h-13 border-[#ffc847]/50 bg-[#ffc847]/10 px-5 font-black text-[#ffc847] hover:bg-[#ffc847] hover:text-[#10283e]"><LocateFixed className={searching ? "animate-pulse" : ""} />GPS</Button>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-white/45" />
+                  <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    onKeyDown={(event) => event.key === "Enter" && runRestaurantSearch()}
+                    placeholder="Sök restaurang, till exempel Pong"
+                    className="h-13 border-white/15 bg-white/10 pl-12 text-base placeholder:text-white/45"
+                  />
                 </div>
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-white/45" />
+                    <Input
+                      value={searchArea}
+                      onChange={(event) => {
+                        setSearchArea(event.target.value);
+                        if (event.target.value) setGpsOrigin(null);
+                      }}
+                      onKeyDown={(event) => event.key === "Enter" && runRestaurantSearch()}
+                      placeholder="Område eller adress (valfritt)"
+                      className="h-13 border-white/15 bg-white/10 pl-12 text-base placeholder:text-white/45"
+                    />
+                  </div>
+                  <Button onClick={() => runRestaurantSearch()} disabled={searching || !chooser} className="h-13 bg-[#18b7a4] px-5 font-black text-[#062238] hover:bg-[#3ed0bc]">
+                    <Search />{searching ? "Söker…" : "Sök restaurang"}
+                  </Button>
+                  <Button onClick={searchNearby} disabled={searching || !chooser} variant="outline" className="h-13 border-[#ffc847]/50 bg-[#ffc847]/10 px-5 font-black text-[#ffc847] hover:bg-[#ffc847] hover:text-[#10283e]">
+                    <LocateFixed className={searching ? "animate-pulse" : ""} />{gpsOrigin ? "GPS aktiv" : "Använd GPS"}
+                  </Button>
+                </div>
+                <p className="px-1 text-xs text-[#b8cada]">
+                  Sök på bara restaurangnamnet i hela Sverige, eller begränsa träffarna med område/adress eller GPS.
+                </p>
               </div>
               {!places.length && !searching && (
                 <div className="mt-6 grid min-h-52 place-items-center rounded-2xl border border-dashed border-white/20 bg-white/[.035] text-center">
